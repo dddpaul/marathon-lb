@@ -18,6 +18,7 @@ Marathon-lb just needs to know where to find Marathon.
 ### Command Line Usage
 """
 import argparse
+import fileinput
 import hashlib
 import json
 import logging
@@ -1054,6 +1055,13 @@ def writeConfigAndValidate(
 
     # Write the new config to a temporary file
     haproxyTempConfigFile = writeReplacementTempFile(temp_config, config_file)
+
+    # Temporal workaround to pass multiline labels to docker container and haproxy, see:
+    # - https://github.com/moby/moby/issues/12997
+    # - https://issues.apache.org/jira/browse/MESOS-6951
+    with fileinput.FileInput(haproxyTempConfigFile, inplace=True) as file:
+        for line in file:
+            print(line.replace("\\n", "\n"), end='')
 
     if validateConfig(haproxyTempConfigFile):
         # Move into place
